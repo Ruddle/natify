@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/natify/static/css/main.3ef6a3fc.chunk.css",
-    "main.js": "/natify/static/js/main.b9fbb99e.chunk.js",
-    "main.js.map": "/natify/static/js/main.b9fbb99e.chunk.js.map",
+    "main.js": "/natify/static/js/main.6d5e0c4c.chunk.js",
+    "main.js.map": "/natify/static/js/main.6d5e0c4c.chunk.js.map",
     "runtime-main.js": "/natify/static/js/runtime-main.e87bd9ff.js",
     "runtime-main.js.map": "/natify/static/js/runtime-main.e87bd9ff.js.map",
     "static/js/2.6a03785a.chunk.js": "/natify/static/js/2.6a03785a.chunk.js",
@@ -18,6 +18,6 @@
     "static/js/runtime-main.e87bd9ff.js",
     "static/js/2.6a03785a.chunk.js",
     "static/css/main.3ef6a3fc.chunk.css",
-    "static/js/main.b9fbb99e.chunk.js"
+    "static/js/main.6d5e0c4c.chunk.js"
   ]
 }
