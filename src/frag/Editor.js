@@ -295,6 +295,10 @@ export default function EditorFrag() {
           >
             Start
           </button>
+          <div style={{ fontSize: "0.8em", marginTop: "10px" }}>
+            Write your sound function on the right ! Sliders are auto-generated
+            by comments starting with //use.
+          </div>
 
           <div
             style={{
