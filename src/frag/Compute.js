@@ -9,3 +9,12 @@ export function objToCompressedB64(obj) {
 export function compressedB64ToObj(b64) {
   return JSON.parse(pako.inflate(base64.base64ToBytes(b64), { to: "string" }));
 }
+
+export function computeBuffer(code, variables) {
+  try {
+    let f = eval(code);
+    return f(variables);
+  } catch {
+    return [];
+  }
+}

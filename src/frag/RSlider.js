@@ -65,6 +65,12 @@ function SvgComponent({ angle }) {
         boxSizing: "border-box",
       }}
     >
+      <defs>
+        <linearGradient id="prefix__svgya" x1={0} x2={0} y1={0} y2={1}>
+          <stop offset="0%" stopColor="rgb(96, 197, 177)" />
+          <stop offset="100%" stopColor="rgb(100, 153, 211)" />
+        </linearGradient>
+      </defs>
       <circle
         r={70}
         cx={90}
@@ -79,7 +85,7 @@ function SvgComponent({ angle }) {
           d={d}
           strokeLinecap="round"
           strokeWidth={20}
-          stroke={index === 0 ? "rgb(96, 197, 177)" : "#000000"}
+          stroke="url(#prefix__svgya)" //{index === 0 ? "rgb(96, 197, 177)" : "#000000"}
           fill="none"
         />
       ))}
@@ -105,6 +111,7 @@ export default function RSlider({
   onChange,
   maxTurn,
   name,
+  unit,
 }) {
   let angle = useMemo(() => (Math.PI * 2 * (value - min)) / (max - min));
 
@@ -178,7 +185,7 @@ export default function RSlider({
             {name}
           </div>
           <div style={{ color: "rgb(100, 153, 211)" }}>
-            {format(step, value)}
+            {format(step, value) + " " + unit}
           </div>
         </div>
       </div>
