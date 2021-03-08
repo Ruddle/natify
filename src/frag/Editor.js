@@ -55,12 +55,8 @@ function drawBuffer(canvas, buffers) {
     let min = buffer.reduce((prev, curr) => (curr < prev ? curr : prev));
     let max = buffer.reduce((prev, curr) => (curr > prev ? curr : prev));
 
-    console.log("min max ", min, max);
-
     ctx.width = w;
     ctx.height = h;
-
-    console.log(w);
 
     ctx.clearRect(0, 0, w, h);
 
@@ -170,18 +166,9 @@ export default function EditorFrag() {
 
   useEffect(() => {
     if (monaco) {
-      console.log("here is the monaco isntance:", monaco);
       // monaco.editor.trigger("keyboard", "editor.action.fontZoomOut", {});
     }
   }, [monaco]);
-
-  useEffect(() => {
-    async function doo() {
-      let buffer = await worker.computeBuffer("() => [1, 2, 3, 4, 5, 6]", {});
-      console.log("BUFFER ", buffer);
-    }
-    doo();
-  }, []);
 
   const [astate, setAstate] = useState();
 
@@ -192,6 +179,8 @@ export default function EditorFrag() {
 
   const code = setting.code;
   const params = setting.params;
+
+  const [computeTime, setComputeTime] = useState(0);
 
   function setCode(c) {
     setSetting((old) => {
@@ -204,6 +193,10 @@ export default function EditorFrag() {
     });
   }
 
+  const waitingForWorker = useRef(false);
+  function setWaiting(b) {
+    waitingForWorker.current = b;
+  }
   // const [code, setCode] = useState("return []");
   // const [params, setParams] = useState([]);
 
@@ -320,7 +313,6 @@ export default function EditorFrag() {
     for (var i = 0; i < matchesForGRID?.length || 0; i++) {
       let name = matchesForGRID[i][1];
 
-      console.log("matchesForGRID[i] ,", matchesForGRID[i]);
       usage[name] = (usage[name] || 0) + 1;
       let width = parseInt(matchesForGRID[i][2]);
       let height = parseInt(matchesForGRID[i][3]);
@@ -328,7 +320,6 @@ export default function EditorFrag() {
       let index = newParams.findIndex((e) => e.name === name);
 
       if (index === -1) {
-        console.log("NOT FOUND");
         changeParams = true;
 
         let valueGrid = [];
@@ -347,15 +338,13 @@ export default function EditorFrag() {
           value: valueGrid,
         });
       } else {
-        console.log(" FOUND");
         let current = newParams[index];
-        console.log(current);
+
         if (
           current.width !== width ||
           current.height !== height ||
           current.type !== "grid"
         ) {
-          console.log(" TO BE REPLACED");
           let valueGrid = [];
           for (let row = 0; row < height; row++) {
             valueGrid[row] = [];
@@ -382,15 +371,19 @@ export default function EditorFrag() {
     });
 
     if (changeParams === true) setParams(newParams);
-
-    console.log(newParams);
   }, [setting]);
 
-  const codeCompiled = useMemo(() => {
-    return compileJsSoundCode(setting.code, setting.params);
+  const [codeCompiled, setCodeCompiled] = useState({ valid: false, hash: 0 });
+
+  useEffect(() => {
+    async function test() {
+      let res = await worker.testSetting(setting);
+      setCodeCompiled(res);
+    }
+    test();
   }, [setting]);
 
-  let compute = useCallback(() => {
+  let compute = useCallback(async () => {
     if (astate && astate.audioCtx && codeCompiled.valid === true) {
       if (astate.gainNode) {
         try {
@@ -415,20 +408,23 @@ export default function EditorFrag() {
 
       let codeResult = null;
       try {
-        let paramsVal = {};
-        params.forEach((e) => (paramsVal[e.name] = e.value));
-        codeResult = codeCompiled.func(
+        setWaiting(true);
+        let start = performance.now();
+        codeResult = await worker.computeSetting(
+          setting,
           N,
-          astate.audioCtx.sampleRate,
-          channel,
-          paramsVal
+          astate.audioCtx.sampleRate
         );
-
+        let end = performance.now();
+        setComputeTime(end - start);
+        console.log("Compute took ", end - start + "ms");
         if (Array.isArray(codeResult)) {
           codeResult = { samples: codeResult };
         }
       } catch {
         return;
+      } finally {
+        setTimeout(() => setWaiting(false), 100);
       }
 
       var myArrayBuffer = astate.audioCtx.createBuffer(
@@ -480,10 +476,14 @@ export default function EditorFrag() {
         return { ...old, source, gainNode, hash: codeCompiled?.hash };
       });
     }
-  }, [astate, codeCompiled]);
+  }, [astate, codeCompiled, setting]);
 
   useEffect(() => {
-    if (codeCompiled.valid === true && astate?.hash !== codeCompiled?.hash) {
+    if (
+      codeCompiled.valid === true &&
+      astate?.hash !== codeCompiled?.hash &&
+      !waitingForWorker.current
+    ) {
       compute();
     }
   }, [codeCompiled, compute, astate, params]);
@@ -673,6 +673,7 @@ export default function EditorFrag() {
             minWidth: "877px",
             borderRadius: "3px",
             overflow: "hidden",
+            position: "relative",
           }}
         >
           <Editor
@@ -686,6 +687,18 @@ export default function EditorFrag() {
               fontSize: "12",
             }}
           />
+          <div
+            style={{
+              color: "grey",
+              fontSize: "0.7em",
+              textAlign: "right",
+              position: "absolute",
+              bottom: "0px",
+              right: "0px",
+            }}
+          >
+            {Math.floor(computeTime) + " ms"}
+          </div>
         </div>
       </div>
 
