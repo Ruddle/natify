@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import React from "react";
-import Editor from "react-simple-code-editor";
-import { highlight, languages } from "prismjs/components/prism-core";
-import "prismjs/components/prism-clike";
-import "prismjs/components/prism-javascript";
+
 import { createEvent } from "@testing-library/dom";
 import RSlider from "./RSlider";
 import ReactFlow, { Handle } from "react-flow-renderer";
 import * as base64 from "byte-base64";
+import Editor, { useMonaco } from "@monaco-editor/react";
 // eslint-disable-next-line
 import MyWorker from "comlink-loader!./Compute";
 const pako = require("pako");
@@ -72,7 +70,7 @@ function drawBuffer(canvas, buffer) {
 
   ctx.clearRect(0, 0, w, h);
 
-  ctx.fillStyle = "#456";
+  ctx.fillStyle = "rgb(30,30,30)";
   ctx.fillRect(0, 0, w, h);
 
   ctx.strokeStyle = "#977";
@@ -97,7 +95,7 @@ function drawBuffer(canvas, buffer) {
     ctx.lineTo((i / buffer.length) * w, ((v - min) / (max - min)) * h);
   }
 
-  ctx.strokeStyle = "#000";
+  ctx.strokeStyle = "rgb(96, 197, 177)";
   ctx.lineWidth = "1";
   ctx.stroke();
 }
@@ -295,6 +293,14 @@ function compileElements(elements) {
 }
 
 export default function EditorFrag() {
+  const monaco = useMonaco();
+
+  useEffect(() => {
+    if (monaco) {
+      console.log("here is the monaco isntance:", monaco);
+      // monaco.editor.trigger("keyboard", "editor.action.fontZoomOut", {});
+    }
+  }, [monaco]);
   const [astate, setAstate] = useState();
 
   const [code, setCode] = useState(codeStr);
@@ -495,7 +501,7 @@ export default function EditorFrag() {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "#789",
+        background: "rgb(62, 62, 62)",
         height: window.innerHeight,
         overflow: "hidden",
       }}
@@ -505,7 +511,7 @@ export default function EditorFrag() {
         style={{
           display: "flex",
           flexDirection: "row",
-          background: "#789",
+          background: "rgb(62, 62, 62)",
           flex: "1 1 auto",
         }}
       >
@@ -516,17 +522,24 @@ export default function EditorFrag() {
             flex: "1 60 auto",
             margin: "10px",
             padding: "10px",
-            background: "#EFF",
+            background: "rgb(30 30 30)",
+            borderRadius: "3px",
           }}
         >
           <button
+            style={{
+              padding: "10px",
+              backgroundColor: "#099",
+              border: "none",
+              borderRadius: "3px",
+            }}
             onClick={() => {
               compute();
             }}
           >
             Start
           </button>
-          <div style={{ fontSize: "0.8em", marginTop: "10px" }}>
+          <div style={{ fontSize: "0.8em", marginTop: "10px", color: "white" }}>
             <div> Write your sound function on the right !</div>
             <div>
               The function will be evaluated for every sample (usually 44100 per
@@ -578,25 +591,34 @@ export default function EditorFrag() {
           style={{
             flex: "1 1 auto",
             margin: "10px",
-            padding: "10px",
-            background: "#EFF",
-            maxWidth: "890px",
+            padding: "0px",
+            background: "rgb(30 30 30)",
+            minWidth: "877px",
+            borderRadius: "3px",
+            overflow: "hidden",
           }}
         >
           <Editor
-            value={code}
-            onValueChange={(c) => setCode(c)}
-            highlight={(c) => highlight(c, languages.js)}
-            padding={10}
-            style={{
-              fontFamily: '"Fira code", "Fira Mono", monospace',
-              fontSize: 12,
+            height="60vh"
+            defaultLanguage="javascript"
+            defaultValue={code}
+            onChange={(v, e) => setCode(v)}
+            theme="vs-dark"
+            options={{
+              fontSize: "12",
             }}
           />
         </div>
       </div>
 
-      <div style={{ padding: "10px", flex: "1 1 auto" }}>
+      <div
+        style={{
+          padding: "10px",
+          flex: "1 1 auto",
+          borderRadius: "3px",
+          overflow: "hidden",
+        }}
+      >
         <canvas
           ref={canvasRef}
           width={window.innerWidth - 20 + ""}

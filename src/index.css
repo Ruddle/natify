@@ -1,11 +1,11 @@
-html {
+* {
+  font-family: "Droid Sans Mono", monospace, monospace, "Droid Sans Fallback";
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+
+  font-family: "Droid Sans Mono", monospace, monospace, "Droid Sans Fallback";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #789;

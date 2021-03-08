@@ -70,7 +70,7 @@ function SvgComponent({ angle }) {
         cx={90}
         cy={90}
         strokeWidth={5}
-        stroke="#e9eaee"
+        stroke="#333"
         fill="none"
       />
 
@@ -79,7 +79,7 @@ function SvgComponent({ angle }) {
           d={d}
           strokeLinecap="round"
           strokeWidth={20}
-          stroke={index === 0 ? "#007aff" : "#000000"}
+          stroke={index === 0 ? "rgb(96, 197, 177)" : "#000000"}
           fill="none"
         />
       ))}
@@ -174,10 +174,12 @@ export default function RSlider({
             transform: "translate(-50%,-50%)",
           }}
         >
-          <div style={{ fontSize: "0.8em", fontWeight: "bold", color: "grey" }}>
+          <div style={{ fontSize: "0.7em", fontWeight: "bold", color: "grey" }}>
             {name}
           </div>
-          <div style={{ color: "#007aff" }}>{format(step, value)}</div>
+          <div style={{ color: "rgb(100, 153, 211)" }}>
+            {format(step, value)}
+          </div>
         </div>
       </div>
 
