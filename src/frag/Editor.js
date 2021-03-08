@@ -6,6 +6,16 @@ import "prismjs/components/prism-clike";
 import "prismjs/components/prism-javascript";
 import { createEvent } from "@testing-library/dom";
 import RSlider from "./RSlider";
+import ReactFlow, { Handle } from "react-flow-renderer";
+import * as base64 from "byte-base64";
+// eslint-disable-next-line
+import MyWorker from "comlink-loader!./Compute";
+const pako = require("pako");
+const qs = require("query-string");
+var cloneDeep = require("lodash.clonedeep");
+
+// instantiate a new Worker with our code in it:
+const worker = new MyWorker();
 
 const codeStr = `//Globals are : sample (0,1,2..), rate (44100hz..), channel (0,1..)
 
@@ -24,7 +34,7 @@ let smoothstep = (a,b,x) => ease(flatstep(a,b,x))
 let mix=(a,b,m) => a*(1.0-m)+b*m;
 //Sound Synthesis functions
 let pure=(freq,t) => Math.sin(freq*t* 2* Math.PI)
-let triangle=(freq,t) => Math.abs(((freq*t-0.25) %1.0 )*2.0-1.0)*2.0-1.0
+let triangle=(freq,t) => Math.abs(((freq*t-0.25)%1.0)*2.0-1.0)*2.0-1.0
 let square=(freq,t) => triangle(freq,t)>0.0 ? 1.0 : -1.0
 let saw   =(freq,t) => (freq*t %1.0)*2. -1.
 let atk=(d,t) => smoothstep(0,d,t)
@@ -37,20 +47,23 @@ let s = 0.0;
 for(var i = 0; i<HARMONIC;i++){
   let freq = FREQ * Math.pow(INC,i)
   let shape = pure(freq,t)
-  let intensity = Math.pow(0.5,i)
-  s+= intensity*shape
+  let amplitude = Math.pow(0.5,i)
+  s+= amplitude*shape
 }
 //Envelope
-s *= atk(ATK,t)*dec(ATK,DESC,t)
-return s*VOLUME;`;
+return s * atk(ATK,t) * dec(ATK,DESC,t)* VOLUME`;
 
 /**
  * @param {HTMLCanvasElement} canvas
+ * @param {Array} buffer
  */
 function drawBuffer(canvas, buffer) {
   let ctx = canvas.getContext("2d");
   let h = canvas.height;
   let w = canvas.width;
+
+  let min = buffer.reduce((prev, curr) => (curr < prev ? curr : prev));
+  let max = buffer.reduce((prev, curr) => (curr > prev ? curr : prev));
 
   ctx.width = w;
   ctx.height = h;
@@ -62,18 +75,26 @@ function drawBuffer(canvas, buffer) {
   ctx.fillStyle = "#456";
   ctx.fillRect(0, 0, w, h);
 
+  ctx.strokeStyle = "#977";
+  ctx.lineWidth = "1";
   ctx.beginPath();
   ctx.moveTo(0, Math.floor(h / 2) + 0.5);
   ctx.lineTo(w, Math.floor(h / 2) + 0.5);
-  ctx.strokeStyle = "#999";
-  ctx.lineWidth = "1";
+
+  let mol = Math.ceil((h * (-1 - min)) / (max - min)) + 0.5;
+  ctx.moveTo(0, mol);
+  ctx.lineTo(w, mol);
+
+  let pol = Math.floor((h * (1 - min)) / (max - min)) - 0.5;
+  ctx.moveTo(0, pol);
+  ctx.lineTo(w, pol);
   ctx.stroke();
 
   ctx.beginPath();
   ctx.moveTo(0, h / 2);
   for (var i = 0; i < buffer.length; i++) {
     let v = -buffer[i];
-    ctx.lineTo((i / buffer.length) * w, (v * 0.5 + 0.5) * h);
+    ctx.lineTo((i / buffer.length) * w, ((v - min) / (max - min)) * h);
   }
 
   ctx.strokeStyle = "#000";
@@ -88,20 +109,232 @@ function hashCode(s) {
   }, 0);
 }
 
+const setQueryStringWithoutPageReload = (qsValue) => {
+  const newurl =
+    window.location.protocol +
+    "//" +
+    window.location.host +
+    window.location.pathname +
+    qsValue;
+
+  window.history.pushState({ path: newurl }, "", newurl);
+};
+
+const setQueryStringValue = (
+  key,
+  value,
+  queryString = window.location.search
+) => {
+  const values = qs.parse(queryString);
+  const newQsValue = qs.stringify({ ...values, [key]: value });
+  setQueryStringWithoutPageReload(`?${newQsValue}`);
+};
+
+export const getQueryStringValue = (
+  key,
+  queryString = window.location.search
+) => {
+  const values = qs.parse(queryString);
+  return values[key];
+};
+
+var ID = function () {
+  // Math.random should be unique because of its seeding algorithm.
+  // Convert it to base 36 (numbers + letters), and grab the first 9 characters
+  // after the decimal.
+  return "_" + Math.random().toString(36).substr(2, 9);
+};
+
+function generateJsSoundNode() {
+  return {
+    id: ID(),
+    type: "JsSound",
+    position: { x: 150, y: 20 },
+    data: {
+      sample: 44100,
+      code: `let t = sample/rate;
+    return Math.sin(440.*t* Math.PI*2)*0.4;`,
+      cachedSample: null,
+      params: [],
+    },
+  };
+}
+
+function generateSoundPlayerNode() {
+  return {
+    id: "SoundPlayerId",
+    type: "SoundPlayer",
+    data: {},
+    position: { x: 250, y: 50 },
+  };
+}
+
+function generateSampleGeneratorNode() {
+  return {
+    id: ID(),
+    type: "SampleGenerator",
+    data: {
+      count: 44100,
+    },
+    position: { x: 0, y: 50 },
+  };
+}
+
+const SampleGeneratorNodeStyles = {
+  background: "#9CA8B3",
+  color: "#FFF",
+  padding: 10,
+};
+const SampleGeneratorNodeComponent = ({ data }) => {
+  return (
+    <div style={SampleGeneratorNodeStyles}>
+      <Handle
+        type="source"
+        position="right"
+        style={{ borderRadius: 0, backgroundColor: "white" }}
+      />
+      <div>Generator</div>
+    </div>
+  );
+};
+
+const SoundPlayerNodeStyles = {
+  background: "#9CA8B3",
+  color: "#FFF",
+  padding: 10,
+};
+const SoundPlayerNodeComponent = ({ data }) => {
+  return (
+    <div style={SoundPlayerNodeStyles}>
+      <Handle
+        type="target"
+        position="left"
+        style={{ borderRadius: 0, backgroundColor: "blue" }}
+      />
+      <div>Speaker</div>
+    </div>
+  );
+};
+
+const JsSoundNodeStyles = {
+  background: "#9CA8B3",
+  color: "#FFF",
+  padding: 10,
+};
+const JsSoundNodeComponent = ({ data }) => {
+  return (
+    <div style={JsSoundNodeStyles}>
+      <Handle
+        id="sample"
+        type="target"
+        position="left"
+        style={{ borderRadius: 0, backgroundColor: "white" }}
+      />
+      <div>JsSound</div>
+      <Handle
+        id="sound"
+        type="source"
+        position="right"
+        style={{ borderRadius: 0, backgroundColor: "blue" }}
+      />
+    </div>
+  );
+};
+
+const nodeTypes = {
+  SoundPlayer: SoundPlayerNodeComponent,
+  JsSound: JsSoundNodeComponent,
+  SampleGenerator: SampleGeneratorNodeComponent,
+};
+
+const defaultJsSound = generateJsSoundNode();
+const defaultSoundPlayer = generateSoundPlayerNode();
+const defaultSampleGenerator = generateSampleGeneratorNode();
+
+function compileJsSoundCode(code, params) {
+  let hash = hashCode(code + params.map((e) => e.value + "").join(";"));
+  try {
+    let paramsArgs = params.map((e) => e.name + ",").join("");
+    let code2 =
+      "((sample, rate,channel, {" +
+      paramsArgs.slice(0, -1) +
+      "}) => {" +
+      code +
+      "})";
+
+    let f = eval(code2);
+    let a = f(10, 44100, 1, {});
+    return { func: f, valid: true, hash };
+  } catch (e) {
+    console.error("CANT USE CODE ", e);
+    return { func: () => 0.0, valid: false, hash };
+  }
+}
+
+function computeJsSound(jsSound, sampleGenerator) {
+  let buffer = new Array(sampleGenerator.data.count);
+  for (let sample = 0; sample < buffer.length; sample++) {
+    buffer[sample] = jsSound.compiled.func(sample, 44100, 0);
+  }
+  jsSound.data.buffer = buffer;
+}
+
+function compileElements(elements) {
+  let edge = elements.find((e) => e.target === "SoundPlayerId");
+  if (edge) {
+    let source = elements.find((e) => e.id === edge.source);
+    if (source && source.type === "JsSound") {
+      let jsSound = source;
+      let compiled = compileJsSoundCode(jsSound.data.code, jsSound.data.params);
+      jsSound.data.compiled = compiled;
+    } else {
+      console.err("CANT COMPILE : UNIMPLEMENTED FOR ", source.type);
+    }
+  }
+  return elements;
+}
+
 export default function EditorFrag() {
   const [astate, setAstate] = useState();
 
   const [code, setCode] = useState(codeStr);
 
-  const [params, setParams] = useState([
-    {
-      name: "P_0",
-      min: 0,
-      max: 1,
-      step: 0.01,
-      value: 0.5,
-    },
-  ]);
+  // const [elements, setElements] = useState([
+  //   defaultJsSound,
+  //   // you can also pass a React component as a label
+  //   defaultSoundPlayer,
+  //   {
+  //     id: "JsSound_SoundPlayer",
+  //     source: defaultJsSound.id,
+  //     target: defaultSoundPlayer.id,
+  //     animated: true,
+  //   },
+  //   defaultSampleGenerator,
+  //   {
+  //     id: "JsSound_GE",
+  //     source: defaultSampleGenerator.id,
+  //     target: defaultJsSound.id,
+  //     animated: true,
+  //   },
+  // ]);
+
+  // let compile = useCallback(() => {
+  //   setElements(compileElements(cloneDeep(elements)));
+  // }, [elements]);
+
+  const [params, setParams] = useState([]);
+
+  useEffect(() => {
+    async function getInitialData() {
+      let data = getQueryStringValue("data");
+      if (data) {
+        let { code, params } = await worker.compressedB64ToObj(data);
+        setCode(code);
+        setParams(params);
+      }
+    }
+    getInitialData();
+  }, []);
 
   const canvasRef = useRef();
 
@@ -169,23 +402,7 @@ export default function EditorFrag() {
   }, [code, params]);
 
   const codeCompiled = useMemo(() => {
-    let hash = hashCode(code + params.map((e) => e.value + "").join(";"));
-    try {
-      let paramsArgs = params.map((e) => e.name + ",").join("");
-      let code2 =
-        "((sample, rate,channel, {" +
-        paramsArgs.slice(0, -1) +
-        "}) => {" +
-        code +
-        "})";
-
-      let f = eval(code2);
-      let a = f(10, 44100, 1, {});
-      return { func: f, valid: true, hash };
-    } catch (e) {
-      console.error("CANT USE CODE ", e);
-      return { func: () => 0.0, valid: false, hash };
-    }
+    return compileJsSoundCode(code, params);
   }, [code, params]);
 
   let compute = useCallback(() => {
@@ -205,7 +422,7 @@ export default function EditorFrag() {
         );
       }
       var myArrayBuffer = astate.audioCtx.createBuffer(
-        2,
+        1,
         astate.audioCtx.sampleRate * 1,
         astate.audioCtx.sampleRate
       );
@@ -226,9 +443,22 @@ export default function EditorFrag() {
               channel,
               paramsVal
             );
-          } catch {}
+          } catch {
+            return;
+          }
         }
       }
+
+      async function putInQuery(obj) {
+        let str = await worker.objToCompressedB64(obj);
+        setQueryStringValue("data", str);
+      }
+      putInQuery(
+        cloneDeep({
+          code,
+          params,
+        })
+      );
 
       let source = astate.audioCtx.createBufferSource();
       source.buffer = myArrayBuffer;
@@ -270,6 +500,7 @@ export default function EditorFrag() {
         overflow: "hidden",
       }}
     >
+      {/* <ReactFlow elements={elements} nodeTypes={nodeTypes} /> */}
       <div
         style={{
           display: "flex",
@@ -283,8 +514,8 @@ export default function EditorFrag() {
             display: "flex",
             flexDirection: "column",
             flex: "1 60 auto",
-            margin: "20px",
-            padding: "20px",
+            margin: "10px",
+            padding: "10px",
             background: "#EFF",
           }}
         >
@@ -296,8 +527,14 @@ export default function EditorFrag() {
             Start
           </button>
           <div style={{ fontSize: "0.8em", marginTop: "10px" }}>
-            Write your sound function on the right ! Sliders are auto-generated
-            by comments starting with //use.
+            <div> Write your sound function on the right !</div>
+            <div>
+              The function will be evaluated for every sample (usually 44100 per
+              second of playback) and played.
+            </div>
+            <div>
+              Sliders are auto-generated by comments starting with //use.
+            </div>
           </div>
 
           <div
@@ -340,8 +577,8 @@ export default function EditorFrag() {
         <div
           style={{
             flex: "1 1 auto",
-            margin: "20px",
-            padding: "20px",
+            margin: "10px",
+            padding: "10px",
             background: "#EFF",
             maxWidth: "890px",
           }}
@@ -359,12 +596,12 @@ export default function EditorFrag() {
         </div>
       </div>
 
-      <div style={{ padding: "20px", flex: "none" }}>
+      <div style={{ padding: "10px", flex: "1 1 auto" }}>
         <canvas
           ref={canvasRef}
-          width={window.innerWidth - 40 + ""}
+          width={window.innerWidth - 20 + ""}
           height="300"
-          style={{ width: window.innerWidth - 40 + "px", height: "300px" }}
+          style={{ width: window.innerWidth - 20 + "px", minHeight: "50px" }}
         ></canvas>
       </div>
     </div>
