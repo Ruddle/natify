@@ -14,6 +14,37 @@ const pako = require("pako");
 const qs = require("query-string");
 var cloneDeep = require("lodash.clonedeep");
 
+function useWindowSize() {
+  // Initialize state with undefined width/height so server and client renders match
+  // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
+  const [windowSize, setWindowSize] = useState({
+    width: undefined,
+    height: undefined,
+  });
+
+  useEffect(() => {
+    // Handler to call on window resize
+    function handleResize() {
+      // Set window width/height to state
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    // Add event listener
+    window.addEventListener("resize", handleResize);
+
+    // Call handler right away so state gets updated with initial window size
+    handleResize();
+
+    // Remove event listener on cleanup
+    return () => window.removeEventListener("resize", handleResize);
+  }, []); // Empty array ensures that effect is only run on mount
+
+  return windowSize;
+}
+
 // instantiate a new Worker with our code in it:
 const worker = new MyWorker();
 
@@ -42,32 +73,44 @@ function drawBuffer(canvas, buffers) {
     let h = canvas.height;
     let w = canvas.width / buffers.length;
 
-    if (
-      buffer === undefined ||
-      (!Array.isArray(buffer) && buffer.constructor !== Float32Array) ||
-      buffer.length < 2
-    )
-      continue;
-
     ctx.resetTransform();
     ctx.translate(bufferIndex * w, 0.0);
-
-    let min = buffer.reduce((prev, curr) => (curr < prev ? curr : prev));
-    let max = buffer.reduce((prev, curr) => (curr > prev ? curr : prev));
 
     ctx.width = w;
     ctx.height = h;
 
     ctx.clearRect(0, 0, w, h);
 
-    ctx.fillStyle = "rgb(30,70,70)";
-    ctx.fillRect(0, 0, w, h);
+    if (
+      buffer === undefined ||
+      (!Array.isArray(buffer) && buffer.constructor !== Float32Array) ||
+      buffer.length < 2
+    ) {
+      ctx.fillStyle = "rgb(30,70,70)";
+      ctx.fillRect(0, 0, w, h);
 
-    ctx.fillStyle = "rgb(30,30,30)";
-    ctx.fillRect(1, 1, w - 1, h - 1);
+      ctx.fillStyle = "rgb(70,0,0)";
+      ctx.fillRect(1, 1, w - 1, h - 1);
+      continue;
+    } else {
+      ctx.fillStyle = "rgb(30,30,30)";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgb(30,70,70)";
+      if (bufferIndex < buffers.length - 1) ctx.fillRect(w - 1, 0, 1, h);
+    }
+
+    let minY = buffer.reduce((prev, curr) => (curr < prev ? curr : prev));
+    let maxY = buffer.reduce((prev, curr) => (curr > prev ? curr : prev));
+    let split = maxY - minY;
+
+    maxY += split * 0.1;
+    minY -= split * 0.1;
 
     function vToH(v) {
-      return h - ((v - min) / (max - min)) * h;
+      return h - ((v - minY) / (maxY - minY)) * h;
+    }
+    function iToV(i) {
+      return 10 + (i / (buffer.length - 1)) * (w - 20);
     }
     ctx.strokeStyle = "#977";
     ctx.lineWidth = "1";
@@ -85,10 +128,10 @@ function drawBuffer(canvas, buffers) {
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(0, vToH(buffer[0]));
+    ctx.moveTo(iToV(0), vToH(buffer[0]));
     for (var i = 0; i < buffer.length; i++) {
       let v = buffer[i];
-      ctx.lineTo((i / (buffer.length - 1)) * w, vToH(v));
+      ctx.lineTo(iToV(i), vToH(v));
     }
 
     ctx.strokeStyle =
@@ -134,42 +177,10 @@ export const getQueryStringValue = (
   return values[key];
 };
 
-var ID = function () {
-  // Math.random should be unique because of its seeding algorithm.
-  // Convert it to base 36 (numbers + letters), and grab the first 9 characters
-  // after the decimal.
-  return "_" + Math.random().toString(36).substr(2, 9);
-};
-
-function compileJsSoundCode(code, params) {
-  let hash = hashCode(code + params.map((e) => e.value + "").join(";"));
-  try {
-    let paramsArgs = params.map((e) => e.name + ",").join("");
-    let code2 =
-      "((SAMPLE_COUNT, RATE,CHANNEL, {" +
-      paramsArgs.slice(0, -1) +
-      "}) => {" +
-      code +
-      "})";
-
-    let f = eval(code2);
-    let a = f([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 44100, 1, {});
-    return { func: f, valid: true, hash };
-  } catch (e) {
-    console.error("CANT USE CODE ", e);
-    return { func: () => 0.0, valid: false, hash };
-  }
-}
-
 export default function EditorFrag() {
   const monaco = useMonaco();
 
-  useEffect(() => {
-    if (monaco) {
-      // monaco.editor.trigger("keyboard", "editor.action.fontZoomOut", {});
-    }
-  }, [monaco]);
-
+  const wsize = useWindowSize();
   const [astate, setAstate] = useState();
 
   const [setting, setSetting] = useState({
@@ -177,8 +188,23 @@ export default function EditorFrag() {
     params: [],
   });
 
-  const code = setting.code;
-  const params = setting.params;
+  const ReDrawBuffer = useCallback(() => {
+    let codeResult = astate?.codeResult;
+    if (codeResult)
+      drawBuffer(
+        canvasRef.current,
+        codeResult.graphs || [codeResult.samples] || []
+      );
+  }, [astate]);
+
+  useEffect(() => {
+    ReDrawBuffer();
+  }, [wsize]);
+
+  const [refreshIsPossible, setRefreshIsPossible] = useState(true);
+
+  // const code = setting.code;
+  // const params = setting.params;
 
   const [computeTime, setComputeTime] = useState(0);
 
@@ -197,8 +223,6 @@ export default function EditorFrag() {
   function setWaiting(b) {
     waitingForWorker.current = b;
   }
-  // const [code, setCode] = useState("return []");
-  // const [params, setParams] = useState([]);
 
   useEffect(() => {
     async function getInitialData() {
@@ -383,27 +407,32 @@ export default function EditorFrag() {
     test();
   }, [setting]);
 
+  let dimOld = useCallback(() => {
+    if (astate.gainNode) {
+      try {
+        let duration = 0.05;
+        let N = (astate.audioCtx.sampleRate * duration) / 100.0;
+        var waveArray = new Float32Array(N);
+        for (var i = 0; i < N; i++) {
+          waveArray[i] = Math.pow(1.0 - i / (N - 1), 2);
+        }
+        astate.gainNode.gain.setValueCurveAtTime(
+          waveArray,
+          astate.audioCtx.currentTime,
+          0.05
+        );
+      } catch {
+        astate.source.stop();
+      }
+    }
+  }, [astate]);
+
   let compute = useCallback(async () => {
     if (astate && astate.audioCtx && codeCompiled.valid === true) {
-      if (astate.gainNode) {
-        try {
-          let duration = 0.05;
-          let N = (astate.audioCtx.sampleRate * duration) / 10.0;
-          var waveArray = new Float32Array(N);
-          for (var i = 0; i < N; i++) {
-            waveArray[i] = Math.pow(1.0 - i / (N - 1), 2);
-          }
-          astate.gainNode.gain.setValueCurveAtTime(
-            waveArray,
-            astate.audioCtx.currentTime,
-            0.05
-          );
-        } catch {
-          astate.source.stop();
-        }
-      }
+      dimOld();
 
-      let duration = params.find((e) => e.name === "DURATION")?.value || 1.0;
+      let duration =
+        setting.params.find((e) => e.name === "DURATION")?.value || 1.0;
       let N = Math.ceil(astate.audioCtx.sampleRate * duration);
 
       let codeResult = null;
@@ -424,8 +453,17 @@ export default function EditorFrag() {
       } catch {
         return;
       } finally {
-        setTimeout(() => setWaiting(false), 100);
+        setTimeout(() => {
+          setWaiting(false);
+          setRefreshIsPossible(true);
+        }, 100);
       }
+
+      async function saveSetting() {
+        let str = await worker.objToCompressedB64(cloneDeep(setting));
+        setQueryStringValue("data", str);
+      }
+      saveSetting();
 
       var myArrayBuffer = astate.audioCtx.createBuffer(
         1,
@@ -445,17 +483,6 @@ export default function EditorFrag() {
         }
       }
 
-      async function putInQuery(obj) {
-        let str = await worker.objToCompressedB64(obj);
-        setQueryStringValue("data", str);
-      }
-      putInQuery(
-        cloneDeep({
-          code,
-          params,
-        })
-      );
-
       let source = astate.audioCtx.createBufferSource();
       source.buffer = myArrayBuffer;
 
@@ -473,20 +500,76 @@ export default function EditorFrag() {
       );
 
       setAstate((old) => {
-        return { ...old, source, gainNode, hash: codeCompiled?.hash };
+        return {
+          ...old,
+          source,
+          gainNode,
+          hash: codeCompiled?.hash,
+          codeResult,
+        };
       });
     }
-  }, [astate, codeCompiled, setting]);
+  }, [astate, codeCompiled, setting, dimOld]);
+
+  const play = useCallback(() => {
+    let codeResult = astate.codeResult;
+    if (codeResult) {
+      dimOld();
+      let duration =
+        setting.params.find((e) => e.name === "DURATION")?.value || 1.0;
+      let N = Math.ceil(astate.audioCtx.sampleRate * duration);
+
+      var myArrayBuffer = astate.audioCtx.createBuffer(
+        1,
+        N,
+        astate.audioCtx.sampleRate
+      );
+
+      for (
+        var channel = 0;
+        channel < myArrayBuffer.numberOfChannels;
+        channel++
+      ) {
+        var nowBuffering = myArrayBuffer.getChannelData(channel);
+
+        for (var i = 0; i < myArrayBuffer.length; i++) {
+          nowBuffering[i] = codeResult.samples[i];
+        }
+      }
+
+      let source = astate.audioCtx.createBufferSource();
+      source.buffer = myArrayBuffer;
+
+      var gainNode = astate.audioCtx.createGain();
+      gainNode.gain.value = 1.0;
+      source.connect(gainNode);
+      gainNode.connect(astate.audioCtx.destination);
+
+      //   source.connect(astate.audioCtx.destination);
+      source.start();
+      setAstate((old) => {
+        return { ...old, source, gainNode };
+      });
+    }
+  }, [astate, dimOld]);
 
   useEffect(() => {
-    if (
-      codeCompiled.valid === true &&
-      astate?.hash !== codeCompiled?.hash &&
-      !waitingForWorker.current
-    ) {
-      compute();
+    if (refreshIsPossible) {
+      if (
+        codeCompiled.valid === true &&
+        astate?.hash !== codeCompiled?.hash &&
+        !waitingForWorker.current
+      ) {
+        compute();
+      } else if (
+        codeCompiled.valid === true &&
+        astate?.hash !== codeCompiled?.hash &&
+        waitingForWorker.current
+      ) {
+        setRefreshIsPossible(false);
+      }
     }
-  }, [codeCompiled, compute, astate, params]);
+  }, [codeCompiled, compute, astate, setting, refreshIsPossible]);
 
   useEffect(() => {
     var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -503,13 +586,13 @@ export default function EditorFrag() {
         overflow: "hidden",
       }}
     >
-      {/* <ReactFlow elements={elements} nodeTypes={nodeTypes} /> */}
       <div
         style={{
           display: "flex",
           flexDirection: "row",
           background: "rgb(62, 62, 62)",
           flex: "1 1 auto",
+          overflow: "hidden",
         }}
       >
         <div
@@ -517,25 +600,15 @@ export default function EditorFrag() {
             display: "flex",
             flexDirection: "column",
             flex: "1 60 auto",
-            margin: "10px",
+            margin: "5px",
+            marginRight: "0px",
             padding: "10px",
             background: "rgb(30 30 30)",
             borderRadius: "3px",
+
+            overflow: "hidden",
           }}
         >
-          <button
-            style={{
-              padding: "10px",
-              backgroundColor: "#099",
-              border: "none",
-              borderRadius: "3px",
-            }}
-            onClick={() => {
-              compute();
-            }}
-          >
-            Play
-          </button>
           <div
             style={{ display: "flex", flexDirection: "row", marginTop: "10px" }}
           >
@@ -545,68 +618,65 @@ export default function EditorFrag() {
                 backgroundColor: "#099",
                 border: "none",
                 borderRadius: "3px",
+                marginRight: "5px",
               }}
-              onClick={() => loadPreset(tuto1)}
+              onClick={() => {
+                play();
+              }}
             >
-              Tutorial 1
+              Play
             </button>
             <button
               style={{
-                marginLeft: "5px",
                 padding: "10px",
                 backgroundColor: "#099",
                 border: "none",
                 borderRadius: "3px",
               }}
-              onClick={() => loadPreset(tuto2)}
-            >
-              Tutorial 2
-            </button>
-            <button
-              style={{
-                marginLeft: "5px",
-                padding: "10px",
-                backgroundColor: "#099",
-                border: "none",
-                borderRadius: "3px",
+              onClick={() => {
+                compute();
               }}
-              onClick={() => loadPreset(tuto3)}
             >
-              Tutorial 3
-            </button>
-            <button
-              style={{
-                marginLeft: "5px",
-                padding: "10px",
-                backgroundColor: "#099",
-                border: "none",
-                borderRadius: "3px",
-              }}
-              onClick={() => loadPreset(tuto4)}
-            >
-              Tutorial 4
-            </button>
-            <button
-              style={{
-                marginLeft: "5px",
-                padding: "10px",
-                backgroundColor: "#099",
-                border: "none",
-                borderRadius: "3px",
-              }}
-              onClick={() => loadPreset(tuto5)}
-            >
-              Tutorial 5
+              Compile
             </button>
           </div>
-          <div style={{ fontSize: "0.8em", marginTop: "10px", color: "white" }}>
+
+          <div
+            style={{ display: "flex", flexDirection: "row", marginTop: "10px" }}
+          >
+            {[
+              ["Tutorial 1", tuto1],
+              ["Tutorial 2", tuto2],
+              ["Tutorial 3", tuto3],
+              ["Tutorial 4", tuto4],
+              ["Tutorial 5", tuto5],
+            ].map(([name, tuto]) => (
+              <button
+                style={{
+                  padding: "3px",
+                  marginRight: "3px",
+                  backgroundColor: "#099",
+                  border: "none",
+                  borderRadius: "3px",
+                }}
+                onClick={() => loadPreset(tuto)}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+          <div
+            style={{
+              fontSize: "0.8em",
+              marginTop: "10px",
+              color: "white",
+              textAlign: "left",
+            }}
+          >
             <div> Write your sound function on the right !</div>
             <div>
               The samples you return will be played on your speaker, and the
               graphs your return plotted.
-            </div>
-            <div>
-              Sliders are auto-generated by comments starting with //use.
             </div>
           </div>
 
@@ -617,9 +687,10 @@ export default function EditorFrag() {
               flex: "1 1 auto",
               marginTop: "20px",
               flexWrap: "wrap",
+              overflowY: "auto",
             }}
           >
-            {params.map((p) => (
+            {setting.params.map((p) => (
               <div
                 style={{
                   display: "flex",
@@ -661,16 +732,14 @@ export default function EditorFrag() {
               </div>
             ))}
           </div>
-
-          <div style={{ flex: "5 1 auto" }}></div>
         </div>
         <div
           style={{
             flex: "1 1 auto",
-            margin: "10px",
+            margin: "5px",
             padding: "0px",
             background: "rgb(30 30 30)",
-            minWidth: "877px",
+            minWidth: "677px",
             borderRadius: "3px",
             overflow: "hidden",
             position: "relative",
@@ -679,8 +748,8 @@ export default function EditorFrag() {
           <Editor
             height="60vh"
             defaultLanguage="javascript"
-            defaultValue={code}
-            value={code}
+            defaultValue={setting.code}
+            value={setting.code}
             onChange={(v, e) => setCode(v)}
             theme="vs-dark"
             options={{
@@ -704,17 +773,19 @@ export default function EditorFrag() {
 
       <div
         style={{
-          padding: "10px",
-          flex: "1 1 auto",
+          margin: "0px 5px 5px 5px",
+          padding: "0px",
+          flex: "none",
           borderRadius: "3px",
           overflow: "hidden",
+          height: Math.floor(wsize.height * 0.35) + "px",
         }}
       >
         <canvas
           ref={canvasRef}
-          width={window.innerWidth - 20 + ""}
-          height="300"
-          style={{ width: window.innerWidth - 20 + "px", minHeight: "50px" }}
+          width={wsize.width - 10}
+          height={Math.floor(wsize.height * 0.35)}
+          // style={{ width: "100%", minHeight: "50px" }}
         ></canvas>
       </div>
     </div>

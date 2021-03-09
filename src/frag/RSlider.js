@@ -146,7 +146,7 @@ export default function RSlider({
   );
 
   let [clicked, setClicked] = useState(false);
-
+  let [hover, setHover] = useState(false);
   useEffect(() => {
     window.addEventListener("mouseup", () => setClicked(false));
   }, []);
@@ -159,45 +159,47 @@ export default function RSlider({
   }, [clicked, mousemove]);
 
   return (
-    <div>
+    <div
+      ref={ref}
+      style={{
+        userSelect: "none",
+        width: WIDTH + "px",
+        height: WIDTH + "px",
+        position: "relative",
+
+        backgroundColor: clicked
+          ? "rgba(200,255,255,0.03)"
+          : hover
+          ? "rgba(200,255,255,0.03)"
+          : "rgba(0,0,0,0)",
+        // border: "1px solid #222",
+        boxShadow: clicked ? "rgba(0,0,0,0.3) 0px 0px 14px" : "none",
+        transition: "background-color 0ms, box-shadow 200ms ",
+        borderRadius: "5px",
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onMouseDown={(e) => {
+        setClicked(true);
+        mousemove(e);
+      }}
+    >
+      <SvgComponent angle={angle}></SvgComponent>
       <div
-        ref={ref}
         style={{
-          width: WIDTH + "px",
-          height: WIDTH + "px",
-          position: "relative",
-        }}
-        onMouseDown={(e) => {
-          setClicked(true);
-          mousemove(e);
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%,-50%)",
         }}
       >
-        <SvgComponent angle={angle}></SvgComponent>
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%,-50%)",
-          }}
-        >
-          <div style={{ fontSize: "0.7em", fontWeight: "bold", color: "grey" }}>
-            {name}
-          </div>
-          <div style={{ color: "rgb(100, 153, 211)" }}>
-            {format(step, value) + " " + unit}
-          </div>
+        <div style={{ fontSize: "0.7em", fontWeight: "bold", color: "grey" }}>
+          {name}
+        </div>
+        <div style={{ color: "rgb(100, 153, 211)" }}>
+          {format(step, value) + " " + unit}
         </div>
       </div>
-
-      {/* <input
-        type="range"
-        min={min + ""}
-        max={max + ""}
-        step={step + ""}
-        value={value + ""}
-        // onChange={(e) => onChange(e.target.value)}
-      ></input> */}
     </div>
   );
 }
