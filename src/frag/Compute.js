@@ -1,6 +1,8 @@
 import * as base64 from "byte-base64";
+import { WaveFile } from "wavefile";
 const pako = require("pako");
 const fft = require("jsfft");
+
 export function objToCompressedB64(obj) {
   const objJsonStr = JSON.stringify(obj);
   let objJsonB64 = base64.bytesToBase64(pako.deflate(objJsonStr));
@@ -46,4 +48,16 @@ export function computeSetting({ code, params }, N, rate) {
   let paramsVal = {};
   params.forEach((e) => (paramsVal[e.name] = e.value));
   return compiled.func(N, rate, 0, paramsVal);
+}
+
+export function exportWav(rate, buffer) {
+  let wav = new WaveFile();
+  let bufferInt = buffer.map((v) => v * 32767);
+  wav.fromScratch(1, rate, "16", bufferInt);
+  let res = wav.toBase64();
+  return "data:Audio/WAV;base64," + res;
+
+  // var WAV = new Audio("data:Audio/WAV;base64," + res);
+  // WAV.setAttribute("controls", "controls");
+  // WAV.play();
 }

@@ -1,16 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import React from "react";
-
-import { createEvent } from "@testing-library/dom";
-import RSlider from "./RSlider";
-import ReactFlow, { Handle } from "react-flow-renderer";
-import * as base64 from "byte-base64";
 import Editor, { useMonaco } from "@monaco-editor/react";
 // eslint-disable-next-line
 import MyWorker from "comlink-loader!./Compute";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Grid from "./Grid";
-const fft = require("jsfft");
-const pako = require("pako");
+import RSlider from "./RSlider";
 const qs = require("query-string");
 var cloneDeep = require("lodash.clonedeep");
 
@@ -61,6 +54,10 @@ const tuto4 =
   "?data=eJx9VWlP20AQ%2FSsjS5XWxDFrE2MSLkU0FVG5ytEvgKpNYojV%2BMBeQwDlv3dm1xcpbSTw7ux7b2bfjtfvxjSZBcbA2Nws8gB%2Bnp%2FcnI4AgNucg0zAsTnA5BXnzu5drEHD6%2B%2BgfghyCIRPT4M4BvIa%2BHV0dVQCHSCga0Op9gH37XL0Q%2BE8TKay7mB2xDkc5m817Hh4eXp%2BNj7CojTML%2BUcu8aMz47q2hSm92EDBDsVcg7HwSINMngo4qkMkzi%2FixeBhOlCRCnsA1taICyYmLB%2FAIS3I7FkGNHjMGYTC5amqVkPCyFzGSgisWiJiEqNsSV0QZiwCWyiRhZwC5ySGwgsGnlSMSTsge3BIbiwgRP6G0DXgQ6wHnJV1KR%2FmpxHSSLnn6UmWVbVVa%2BUOaNw2eAjhRcoyuisuxTowATnkTL1KiniGVy9xnIe5GG%2B7lhaZKr%2Bhyx4skA2huVoEgXLjVDpKn4xLquQWSjix8XnbDHJGWv4XTw%2B1zPhC%2FUjGeCqUtcnpStPhfi7qCpdEzxQPXKoWpxcrvniZZ3cVNKqQOXUFCF%2FE2VW4ZuDYXjWKqyBs2DaWN%2Fab7BMWXer8oiaDXlyrXFKjUy8xIlUG6RnI5ImL8y1LR1GRt8msuOa1Pd6Z1G6CHJkDrNMvLKr4enFyejX0fnN2TWCHpIMWIVDEN%2FVoz1oA3Ww0zHh%2FS4GUEeJYIXchMvh9Wi3ilMm9LieZ2qupre4P1e9CT39Prj3NuYfiemcsVjtSckDqKqeRQahLinEeqqbAGd1IfRTbyMd1X7lEmlt6Atmo3EJbwkLQrNNy%2BciJU%2BpoeuzbwPIu1AWMwLVQtz22kIZdPZbwA2tqldX%2BpETJMMl7BmGN6ml32hsDD2jO7NJjS1AljmenioDabhS6%2BV53tLznvohRyV9heM6JswCWWSx9qcEWzR%2BzEQ6zwdwWwbvEW1YRioyEeXG4PbdiEVEX4WvN3ig4%2FMzXMRbzxjQfg1sT2PgcMugBqeYYxnPYlEgwaH1Ig4lcnNjZdVCuqpaphL5oFHyjFoNs7Uk0J6mDO6UEvTtaVQ4d1r5W0Lcdbe2%2Bbbf9%2F1ev%2B%2Fv9P2WMnneSFfKbkv2H6q9nu86W17fQ82%2B5%2FdbmtRylaZX7xe%2Fa5UqGVhqzt8a0S3OWypVo1dKVW1%2BrfKJbW3TsNPXTe%2F933R3db%2F6A6uoOxk%3D";
 const tuto5 =
   "?data=eJydVm1v2kgQ%2FisjS1eZYIxNQtOS0ipKuSu6BtKQ3BeCTgsssXV%2Bq70u0Ij%2FfjO7XttQiE5nKcY7%2BzzPzs7Lbl6MRbzkRs9ot%2FOMw1%2Fjr4%2B3AwBwbMcBEYNrOwDzLY7dq6dIga4f%2FgT5IMglEP52FchBQ1YCPw8mNwXQBQJ2bCjU9nC%2F3w%2B%2BSVwXF5OrvsPVEec64P0sYV%2Bu72%2FHo%2BENOqVgl4Wca5eY4eim9E1iLo5sYHJ3fTMoQF1QOzgvHdOwP1J%2FCaPxw2BCfrxFM03cMuHBFx4kPIVVHi2EH0fZUxRwAYuAhQn0wdxYwCyYN6D%2FEQhvh2xjokV9%2B5E5t2DTaCjWKmAiE1wSiUVTRJRqprmBFrAGtMGcyy8LHAvcgssZ7gZ5QjIEfAC7C5%2BgA2c4oL8etFxognmBXGlt0EuRszCOhXdsaZI1tV%2FlTLFm6G8qfCjxDEVNqpQWGZowx3EowziJ82gJk20kPJ752WHEkjyV%2Fq9S%2Ft0CUQUswyCRsdgIuS7td8PCC5H6LHoOjrPZPDPNit%2FCtHa6DfiNqpkC0JGuHg6KqHzP2a9O6eUq40dZYZ9kg1CUSz5bH5IrT2oeyDUVhYl%2FiLLU%2BCoxJuZamhVwyRdV6Gv75ZvEbHV1jKjYkCcOCqfQSNk6ioXcIP1WIkm8Nju2pczIeG8T2e00qO7VzsIk4BkypzNleU5Z4qnhKk7B1CiEOFfq6wNMrm%2Fvvg7%2Bvhk%2Fjh6UsdlswMtTBCATiWCJbMP99cPgSttpHYxwOU7luJr2wzwQLOJxLpFkl71qoycDtvBMM43XFuBrGC25qmu5qOInvlh4SFScgEfP2NatEq6AOKrkFnFgAb5%2BkVOC8WqVcdqMhmA65DmjQXqjbdomLqUIV3q63R5HwRbZYZJj%2FDPZOMJjuFXBUsGXwNDgsQwwP7Clg8OP%2FMzjS63gr4CchDdvQGB1yl%2BMPx3CGG%2FQMHrq0Wv23WpKpvEHS8FXOfRRQB%2B7OCozpx95gFF193VhmTKyVOPyVD%2BriguPZgv8xiE981hC5UhnQdk2hyAqPV%2FkSwKWgo7dPRRModmvgc%2BUeoXYVZ8ZQVOEYPuZeKVZ6nDEHlMjitu%2BK6kutJrSTs6rt2yHKeV41t8LMU0W3aOmqRRwreK2fYpQLOUiTyMV3QJrlaJZD6baKA3YcTvDMhKWsjAzetMXI2IhXeOfH7G8huMRTuJFY%2FQoRgaeCEbPdSyDzhSyuZbxgwU5Elz70tl7OpaRR75AqczYWaWucrVU1Zp7kgXPKMXxVt0Xdy5qkhjlykvHLSTpSq5UHcet%2BVMTdtwDabemTKmrpLVypyZ7QtV9X1Oh%2BtUq3XLH%2BJ%2BJ1qGIFirez0qme%2BnUVHT3aCXtzWWpciRwnZoAts1h2C9eD3udLc83nFr7S%2BEplz3uP3vIeGsZYpsQ6Bn%2F06no0%2BmKBRm3Tr1Fmp8yz6yT3BrruMBR7itrvcI9wToOKbn%2FgXXM6f9DU8Ga1fIkr4paO3TLdjg%2FWrZ7VXu%2Bm%2B3%2BBWEwbUk%3D";
+
+const tuto6 =
+  "?data=eJyVVwtvm0gQ%2FisjpKsgIRgwtmPnUbmJo0aXRy9Oq5MSt1pjEqPD4AJO3Ob8329md4GFuNHVebDMfvPNY2dn1y%2Ban8wCbaC1WqssgC%2FXF58vRwBgW7YNeQKOZQNMf%2BC7c3AfC9Dw9k%2FgHwQ5BMJnR4BsFGQl8HQ0PpFABwjoWiDZarizm9FfHNdBY9zqPlpHnGPD%2FGcJ%2Bzi8uby%2BOj9BpwSsJ%2Bkcq8ScX52UvnGMtyWAy%2FOrb1%2BGN3XgvgQqsOHf%2Fwd2dX07GguQI0Gu%2FQo1Ho1OMR6RVdeW8eE0%2FbRaNyyeJQuYB9EySOFhFft5mMTZfVwMIXvw267OTJia4JswM%2BDlPiajaZCv0rjU0csJAAbHx8dHYB%2FAtBz55WhWjgr8E0shhyPQGezC1IB%2FcbLiOkKWr4IJ%2BqV8inIf4boPh4fQriv5RMYnXAcnuG1wHKMEzBAwQ22npkY%2B5CidvSIjS3lNKsPXc85tG9ACz%2B17%2FW7P7XclanMf4y9FlwUBmeSr8RXs9eloePphNDqjHNB8iuuA8yLZ9ro%2Favd6%2FQ99E6Gu1z7rDvf3afyhN3I6Ttc1OSGF85CkoBNDCDylIRyC08Hn7q7BWXWD18Ily%2Bfw8dUyR0EOfsQWS0rY2gRaZwOOjoHw1oKtaeXFOIx1LIG1YQith4jlWR5wRVEda67I2XR9DXvAKCn6lI%2FQexMcqRswrEzUy7lGji5bHXgPLuzgC%2F0NYM%2BhtfVQl0sN%2BieUs0WS5PNtpolWL%2FwqZ6TNRbiu8AuOZ0iq097ZIwFWHr4veLbGyQrXY%2FwjzudBFmbNjC1XKff%2FIQ2%2Bm5BXCcswSSSUgZDrXP7pXHqRpyGLH6Pt2mya6Xqlv4eb3%2B0Y8Aftb0qAy11tvsisfF%2Bx104V5irhMe8o73nLoCyX%2Buy5qVx5onjAbQoVlv9DKrMCXy2MjmvNxQI4C%2Fwq9Uq8wXqp77WLHFGxoV7eKBzJkbLnOMl5gPSsSJbJs%2B5aphCjRt8iZcc1ihZ3EeQZPAZxkDIEZMETDiLg6GWY%2B3PcS%2BHPAGgDZkvmh%2FGjXGSaDDK0GAfPcBYlLG%2B7wzRlP3TeetGAhNzZE0TRaSI1kywLp1FwuYpQfudYJjrYRh%2FbFrqGm9ejZ9uEDj09s2u1OiaeKq2uiX2%2B1Zsgc41CebOyKPQDXR4lpjwrdmln8VZA9pVWID20oiB%2BzOeyLcg%2BzdO6aBq441l9iJIk1UX%2FwAVSHRBUxkSQ%2BLgpkiiwouRRD03OZ4iZ8AH0IkEhlc0Eiw8PWLRfmMWqavHhRqgEEfaFLXrY0tqqHrxSKqeky1Tm1FK4dMCrvVXTouAjllHHD7HXIB7Rpdk9ZzKAanWFSjlLq811dzglldmmvvIXPEcZX33TNb2JmI5K8S9LatsiSrVfLCKfE0417b%2B5lhc1VlrPRhBjsRuaQchN8ttRFHpbwygmG3FIF96MQ2LqcdCPaGuLZcQ3sXBwPLz8dDH6dnL9%2BepW9TMTRyC6ykeHoAKFsLFzqHI4tgU3w9vRQTVD1rDJKpKUSxSBv1pU2bVr5WWhTyPmz3U9NiHkfa68V0l%2B1KRGqOSsDqDe9k2kgyq1rJAKVdnfFTxBNdcIDHeg4u0ORdbzDio4bdec75937%2FhRzm%2FfeFTsKG4Yagz02XZtKe7Z9cpQP%2FzeQYcSll5xbFD%2Fx9s35Wq7QjZnS0oXHdrl%2BbYdSsUS5qsZwUtybCTbyVPA5FUqO8JSHbepv2akkiIUz04dv8%2BY4maDB6R4o9ypeXvtKi8lJf2KAXnnlAqy8u%2FoSXtKz9CQ%2BJ5l8C0iL7AvNbgp3h5TtpxnA7iTYtpUmqktWcoWmTa4e9FitqCvb6efsUbOr69wEi%2BI2oCSpeFJrg0c29ToLkAyx9SeWLRChbbl2bWPZ2qrOMyRKtM2ZskrHC1ZC84apdTTSnKUKhSY0Mor25EU9J2xYrFtR7GvENmOq1DRslRcBZWr8PyCxu0pLHRBKFg6ZUh4IhY8lDLJMv9Z0XiurbAUu6RgKrzplSxbMuMpBLhZmnn13s6rmgp58Wgy7L9lXXVfXlh%2BS7%2Br6PMTphm7a7%2Bl3lHU6QtYqW3bdklgv0nhuJ3%2BZrL5DysJttM%3D";
+
 /**
  * @param {HTMLCanvasElement} canvas
  * @param {Array} buffer
@@ -427,6 +424,18 @@ export default function EditorFrag() {
     }
   }, [astate]);
 
+  const [exportedWav, setExportedWav] = useState(null);
+  const exportWav = useCallback(async () => {
+    if (astate && astate.codeResult && astate.codeResult.samples?.length > 0) {
+      setExportedWav("loading");
+      let b64file = await worker.exportWav(
+        astate.audioCtx.sampleRate,
+        astate.codeResult.samples
+      );
+      setExportedWav(b64file);
+    }
+  }, [astate]);
+
   let compute = useCallback(async () => {
     if (astate && astate.audioCtx && codeCompiled.valid === true) {
       dimOld();
@@ -439,6 +448,7 @@ export default function EditorFrag() {
       try {
         setWaiting(true);
         let start = performance.now();
+        setExportedWav(null);
         codeResult = await worker.computeSetting(
           setting,
           N,
@@ -615,10 +625,12 @@ export default function EditorFrag() {
             <button
               style={{
                 padding: "10px",
-                backgroundColor: "#099",
+                marginRight: "5px",
+                fontSize: "0.8em",
+                cursor: "pointer",
+                backgroundColor: "#3dc9b0",
                 border: "none",
                 borderRadius: "3px",
-                marginRight: "5px",
               }}
               onClick={() => {
                 play();
@@ -629,7 +641,10 @@ export default function EditorFrag() {
             <button
               style={{
                 padding: "10px",
-                backgroundColor: "#099",
+                marginRight: "5px",
+                cursor: "pointer",
+                fontSize: "0.8em",
+                backgroundColor: "#3dc9b0",
                 border: "none",
                 borderRadius: "3px",
               }}
@@ -639,21 +654,83 @@ export default function EditorFrag() {
             >
               Compile
             </button>
+            {exportedWav && exportedWav !== "loading" && (
+              <a
+                href={exportedWav}
+                download="exported_sound.wav"
+                target="_blank"
+                style={{
+                  padding: "10px",
+                  fontSize: "0.8em",
+                  cursor: "pointer",
+                  backgroundColor: "#569cd6",
+                  border: "none",
+                  borderRadius: "3px",
+                  textDecoration: "none",
+                  color: "black",
+                }}
+              >
+                Download exported
+              </a>
+            )}
+            {exportedWav === "loading" && (
+              <div
+                style={{
+                  padding: "10px",
+                  fontSize: "0.8em",
+
+                  backgroundColor: "#569cd6",
+                  border: "none",
+                  borderRadius: "3px",
+                }}
+              >
+                Loading
+              </div>
+            )}
+            {!exportedWav && (
+              <button
+                style={{
+                  padding: "10px",
+                  fontSize: "0.8em",
+                  cursor: "pointer",
+                  backgroundColor: "#3dc9b0",
+                  border: "none",
+                  borderRadius: "3px",
+                }}
+                onClick={() => {
+                  exportWav();
+                }}
+              >
+                Export
+              </button>
+            )}
           </div>
 
           <div
-            style={{ display: "flex", flexDirection: "row", marginTop: "10px" }}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              marginTop: "10px",
+              alignItems: "center",
+            }}
           >
+            <div
+              style={{ color: "grey", fontSize: "0.8em", marginRight: "3px" }}
+            >
+              Tutorial/demo
+            </div>
             {[
-              ["Tutorial 1", tuto1],
-              ["Tutorial 2", tuto2],
-              ["Tutorial 3", tuto3],
-              ["Tutorial 4", tuto4],
-              ["Tutorial 5", tuto5],
+              ["1", tuto1],
+              ["2", tuto2],
+              ["3", tuto3],
+              ["4", tuto4],
+              ["5", tuto5],
+              ["6", tuto6],
             ].map(([name, tuto]) => (
               <button
                 style={{
-                  padding: "3px",
+                  padding: "8px",
+                  cursor: "pointer",
                   marginRight: "3px",
                   backgroundColor: "#099",
                   border: "none",
