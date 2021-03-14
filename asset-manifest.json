@@ -1,25 +1,25 @@
 {
   "files": {
     "main.css": "/natify/static/css/main.e46e2939.chunk.css",
-    "main.js": "/natify/static/js/main.c4ae6e81.chunk.js",
-    "main.js.map": "/natify/static/js/main.c4ae6e81.chunk.js.map",
+    "main.js": "/natify/static/js/main.08b849aa.chunk.js",
+    "main.js.map": "/natify/static/js/main.08b849aa.chunk.js.map",
     "runtime-main.js": "/natify/static/js/runtime-main.d147e770.js",
     "runtime-main.js.map": "/natify/static/js/runtime-main.d147e770.js.map",
-    "static/js/2.f1f71957.chunk.js": "/natify/static/js/2.f1f71957.chunk.js",
-    "static/js/2.f1f71957.chunk.js.map": "/natify/static/js/2.f1f71957.chunk.js.map",
+    "static/js/2.296e2d7a.chunk.js": "/natify/static/js/2.296e2d7a.chunk.js",
+    "static/js/2.296e2d7a.chunk.js.map": "/natify/static/js/2.296e2d7a.chunk.js.map",
     "static/js/3.e39b9026.chunk.js": "/natify/static/js/3.e39b9026.chunk.js",
     "static/js/3.e39b9026.chunk.js.map": "/natify/static/js/3.e39b9026.chunk.js.map",
-    "a28b72143fc587987767.worker.js": "/natify/a28b72143fc587987767.worker.js",
-    "a28b72143fc587987767.worker.js.map": "/natify/a28b72143fc587987767.worker.js.map",
+    "e8be281791b297cd80be.worker.js": "/natify/e8be281791b297cd80be.worker.js",
+    "e8be281791b297cd80be.worker.js.map": "/natify/e8be281791b297cd80be.worker.js.map",
     "index.html": "/natify/index.html",
     "static/css/main.e46e2939.chunk.css.map": "/natify/static/css/main.e46e2939.chunk.css.map",
-    "static/js/2.f1f71957.chunk.js.LICENSE.txt": "/natify/static/js/2.f1f71957.chunk.js.LICENSE.txt",
+    "static/js/2.296e2d7a.chunk.js.LICENSE.txt": "/natify/static/js/2.296e2d7a.chunk.js.LICENSE.txt",
     "static/media/logo.6ce24c58.svg": "/natify/static/media/logo.6ce24c58.svg"
   },
   "entrypoints": [
     "static/js/runtime-main.d147e770.js",
-    "static/js/2.f1f71957.chunk.js",
+    "static/js/2.296e2d7a.chunk.js",
     "static/css/main.e46e2939.chunk.css",
-    "static/js/main.c4ae6e81.chunk.js"
+    "static/js/main.08b849aa.chunk.js"
   ]
 }
