@@ -9,6 +9,7 @@
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
     "byte-base64": "^1.1.0",
+    "cubic-spline": "^3.0.3",
     "gh-pages": "^3.1.0",
     "jsfft": "^0.0.4",
     "lodash.clonedeep": "^4.5.0",
