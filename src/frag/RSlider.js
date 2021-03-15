@@ -36,7 +36,7 @@ const WIDTH_HALF = WIDTH / 2.0;
 
 function SvgComponent({ angle }) {
   let state = useMemo(() => {
-    let a2 = angle + Math.PI / 2.0;
+    let a2 = angle * 1.0001 + Math.PI / 2.0;
     let arcpaths = [describeArc(90, 90, 70, Math.PI / 2.0, a2)];
     if (a2 >= Math.PI * 2.5) {
       arcpaths = [

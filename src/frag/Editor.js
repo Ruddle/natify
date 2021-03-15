@@ -4,6 +4,7 @@ import MyWorker from "comlink-loader!./Compute";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Curve from "./Curve";
 import Grid from "./Grid";
+import InSound from "./InSound";
 import RSlider from "./RSlider";
 import { mix, smoothstep, useAnimationFrame, useWindowSize } from "./utils";
 const qs = require("query-string");
@@ -25,7 +26,9 @@ const tuto4 =
 const tuto5 =
   "?data=eJydVmFP4zgQ%2FSujSLdKaUiTtKHbsuwJQe%2BobqEchbsPFJ1M65Lo0iSbuEtZ1P9%2BM3acpKVF6CoRnPG8N%2BM3YzuvxjSZcaNv%2FD08%2F31wO7b%2FGn27uxzACbzCIoz74FiwYKs%2BuBbkgqdosHG4jEPRh4kxMWA9iTX29PaPGtB23AKLQ7%2BCO06NIN9kOB%2BMz%2BoUmsGrwfejf7sZ%2FFmh%2FTL1z45T4F2nAl%2F83ERfnN5cjq6GVXwdvKuD71348KpC6aidumBpxKY8SKIZz%2FrePpbx9elZpbwSrdCvvbH%2BOttGObb0uBrdDsaS8DmciQAXgMkFPHwKBPThCNYAMIkncat1yUQAFzxKeQbzZTwVYRLnkzjiAqYRW6RIYq4sYBY8NuDkK5C%2FjbmZaFHjMDYfLVg1Ggo1j5igjAlIKJoioGQzzRUcAmtAC8xHObKoz9wCy1nOCSckQsAXsH34FTw4wBf668OhC00wO4iV1gY9FDhfJIkIdoUmWlPnVc4UMRfhqvJfSH%2BGpKZrOxgEDU14xPfFMak1TpbxDMYvsQh4HubbiqXLTOY%2Fz%2Fh3C0QlWI4ikbFYCKUu7dfDIguRhSx%2Binaj2WNumhX%2BEHvB8xvwC2COJIAnU91%2BKVT5vmRvk9LhKuNXajDUmpZNKpd49rwNrjKpZSBjKggT%2FxJkpv2rwphYa2lWjjM%2BraSvrZevUvPQ1xpRsyFObDVOwZGx5zgRcoH0vyJJk2fTsy1lRkTPJrDrNajv1coWacRzRN4%2FKMtTxtJAvc6TDEzthS7OsRp9gfHp5fW3wT9no7urW2VsNhvwOokBZCHRWXq24Ob0dnCs7RQHFS7fM%2FleTYeLZSRYzJOl9CS73MQ2ZjJg08A0s%2BTZAnwM4xlXfS2DKnwaimmAQIWJePyE2%2FqwdFeO%2BFbRTZPIAny8oVOEyXyec1qMdsFyyGNKO%2BmFtmiZGEoBjvV0qzWKoxdEL9Il6p%2FLjSMChksVLBN8BgwNAcsB6wMvdHCEcZgHfKYZwjlQkvDpEwjsTvkf9aeLAvUG7Ua%2FunrNE7eakmX8wTIIVQ1DJNCnPb6VldM%2FeYBRd5%2FoxjKlstTj8o45qJoLj34LwsY2PA9YSu1IZ0G5bbadqPVCsZyRY0no2P42YQbNk5rzgWKvPNbVMCfXDF1w%2B5l4H1vqcMQ9pt5It81UMt1oNaa1nFdPuR3uqcYPJxsS02Sxe9Q0tQLGKr4gJjGSZVwss1ipW%2FhaJWneh3ttlAbccWvDMvCyeuIiN%2Fqvxvkd9tVwdEVjvGIMed0ZeBYYdJUbdJoUNroC8TMmR3ztekQ3y%2FjBoiV%2B4rh2x9n4uWvLUMlW9Jp8F%2Fd%2BasfuIBcKXMvT0YnKi7yko6%2BfvcnitOe1j5yjbq%2Fb7fR63c%2B9bi3I20mMShXdIY9XC%2FluxE6n67ltv%2BcjZc%2Fv9uqL2prCaNT%2BZTS%2FlIu%2BsIp4VJci2sXP7XBt8iv4cYyEeh%2BWpHoB3ZJwbwE8%2B6jjd3237boOjnpOJdbbKYyFe%2FVNpTsfqbRX8SKNPADrlfbLSrc%2Fqnq9d6gP5YlNnPJLTamovtSM%2FlHpe38%2FZ1HOrX1PkS33mR%2BsvdgaajfBTuw7sd7B7kHtdimxH0DtSvr%2FwJRYD%2Bv1%2Bj%2FwVtj%2F";
 const tuto6 =
-  "?data=eJy9WQtzm0gS%2FitTVF0VKATzEEJoY%2BeUWIldG9s528ldle1NIYQk7iRQADlKHP%2F3654Xg4Ti3GPj2o3m0f31Y3p6eoYHLc4niTbQ%2Fn56%2FHZ0fWV9vHj34WxEDskDWabZgNgmWUabAXFMUlbJCgYsaK6ztBqQW%2B1WI4%2B3meAdXv%2BuMFq2w3mh6dfstq0AlE2E49HVaxVCILgK%2B37us9PzT28uR3%2BrEXypft%2B2BYZj1wgn37Yghv%2F4XyGQ%2FdPZh3dtdnjtdmyaCCfDy7OL81PFE4LfkcuwdxHQCR%2BHl7sr2FdYV4soTub5YpIUlGAPFDjjP4Pq7YO6ej98PdoTHH7TKU3drP3LfX5xPbra9ZFr79PO36vdaHSsANm2XHPP3ovmuPbeRTg9v7q%2B%2FNCyi%2Fai7V0EBuXYFKz6ukqQJF4X9wmjOzi4jLJJviTzZLFKCjJdZ3GV5ll5m4kmKaex5%2BqRScYmiU0yMcjDbUbgr0iqdZFJHqLLGfyLyNHR0SGxfyNj2YplayJaNcN9VJAKFNUj8oyMDfK9MRvBzJj8wcBIqMyMYSYGFj0mL14Qb5sxRkg65TowRVWArWAoJBMgmQCCs8WK2lQwPmmBRInV1jh3iF5RGbZBDkjXDbthL3DDHqcDp8N%2FaGuZJCiYhs8fxN4cj4bHr0ajN7%2Bx6QIWBqaZ9%2B1NOPKCIHwVmkDpdr03vWG%2Fj%2B1XwcjxnR7mOMBDq6Z5QXRESAl1dUpeEMeH32fPDIqqI9XBwVlUzcnJzrovkorEi2i5Qr9tTIILb5DDI4L0FgQihgJrp5kOMbExDMY1XUQVxiddQxouG8pI0XR9Q56TCH2ij2nLxLB1OG8SlQnyVZSjApUtn7wkLulAB%2F8fkOcOLnIXeOmogf8w5nKZ59W8TTTC6kIvOcNlLtNNTb%2Bk9BGA6o5lgxAYgDCE%2FpJ66ypfw3pcfc2qeVKm5bbHVuuC6j8tks8mqWqHleAkHOSGoOp0%2FP0p16Iq0iibLdq5o3Gp6zX%2FM0hpgW%2BQvxDQER3gUlW3O9wrn9fRrlJCXD14hKkTfI1mo5clf%2FRlm7nWRNGAymQsUfUvZJkI%2BnphdFhrOswIJ0lcu16xN9ms9Oee8BEGG%2FBVW4HDMYroS5ZX1ED8rUFW%2BRfdtUw2DByhhcyOawi7aJa5hxxa5Ku8wFVU4vQepNcTJjikjtIsSu%2BT1%2FlyVSRlCdsMYMbr6TQpKD9PfjS0IgwtNmcVyWQdJ7q%2Bu5PkGuNukJ2xgSbS1MYAYEePoniu64lJUhN9gaF6k96BDF5ydUgCNgKmQfML6vAlreYnUbHMszQuUdUygxWYixFVZZG41LVWUjn1NiaTeqgtycikIEoQRZq1SLJZNTd4GlLAhQCU%2FQnAeIhJTjDTmu6Sl%2FNohWsPRlG1P7Hg2iaDFV2k1XqCpA1ImGhSF%2BTZoULeYRJqmsedPF%2BoGR2FzdZpFRXc1dSJjTWgC8B4bjD1mViZQlHXNbG4gOonMLE4ghSPJ73j3EGMrPRkazG48AcyHRBUE0ogPLpM1J0WRGL34DawLYCFrcGVfxR7Z5Zns1%2Bspwfx6TY0Dbymql6rqjDn%2FkJV6wyC2khd%2B05T167fquw4WSx%2BobIwCQ416LngeQ13OlYYKhaoqrdqjppescxI8wSmwDrny4QeVbrYcTjG6WqIj%2FlivUwkyj3ttuAoGKA1I%2BPpmZY9XB0dz1XwhYUZOJ0SXdTGh4doN6PFCKGEuzSuoeDVC1FziPWo%2FUsdq26nR3Nr0se6TiVg83e74r0%2FQzzdSD8lvvvnW%2B8%2BqaD7Iw19oaEoS3Yoeu02CPqnLXh6AX%2BkYCDEY8bcE2R9QYO7fw9NKHHoGSGodoPaFoRthzHf%2B%2BJWZ82SSi0u4Z53gCGPZSYUZfRcgtq107nNOmR0Hy3WERREJa1kaQmDRWs%2BhaqXVkqw%2ByMygwonI1WK27FD%2FrqKimhJHi7G%2F0zi6pHwigp%2F1OlsvRwnBZu2VmkVz4GI%2FaYZOflm7SUuwRnVNUgDBtqmopGrTOI8m5T7WVlFAXyTdRHRC%2BgTXBUTA9ffIslaBR0o194E%2FHUOcmgVaVJqQy3x6OWQITYtYSS4rniNscn370B7ROjrFCvSO6oBxk5qF1dKUXZhslQ82yHikagueURFApNQg%2BvD6995ZoVCm%2FW4eEUw46aPAG%2BTLCkwNnC6JNUcQoGFySzPJ6TKIdDmSaF4Z8Y50EOl3nDMKi%2FLdLxIztZ4FCo701H2oau0PbVNc0fd70JfnWdbt9lX53vQ95V%2BAP2e0u9DP7hj%2FaaiSs8qFykU7PwxDCpz9pRl7Nr4jnoSq%2Bsbdpx373aJrlZRnNJ6q4WIefyQDIsi%2BqrTVylFTr09ZPVNK2%2BcUypvyrZbWtMAWm5bd0NrgekizwudPQfgjUexnsflnRKYDIRTH9GD4SUbHdB74wHtNCUvohL3SIqpiOBbD3nZrLip6Td0%2Fo7H9qBJwW7Qn4tKl0%2BrUOLwh1qjKY4BHDKxnS19cDcygiMioWBjsrEXNWYTptUslnYOt2Pgh27lNC2upassA2QrZH6IyWlaMLlj7%2BirHzXIrCPJFBYoF5o6zOAOJLTpEPruKi85NBBYnqEC5LVHhPBWTrjNIK%2BW%2BQLyTT7TbzUapLeayejlZRxuXMoGuBqevX83%2BvT64sP5tcHfsgQdi3faekFUQjaoBL%2FIz5T2gFwOr0dKTi3rzVSiwdwa4QxadWf09UgeAZgrlXjbvdKzN0sOymy6wV9cA%2BaprbcDnVMZsup9W0QrjKubO8Vu9Q3Ptu3mHhdmpvi8AbOWXY%2Ff84PDMWlp0BO6cTnWal3O9Xt2AIgrRUN9njRnSF0OyI0YlhCg5qNmal%2FSCZwOpTZ40I4%2FgKdPL86xvUwzbYAP8Noy2mgDuNFo%2BA7Ex%2FC1WhtoJfArD9lAZmpYpiTawLM8u%2FHnPZoae%2Byo4QV4G%2FZ%2BaNsKAQtORUVPWyhKPzdJOPzctFdZmHZdr2f3gjAIumEY9MNAEWI7WxY4IBWP4Rb3uIrIH0rsdgPX8fzQB3mhH4SKvO0pkCbSmpToS5fh9yguE9eGSzz5ti0Sv2EIGa5tIyjPn%2F8n0D4FFSVNi2%2B8Vt9sdn3jd4PAdX0%2F8G3f6fVcKQIdL96kpAAZmTJ69scOBCMCdoPQ9ny%2FK4ED7mMoDnaCsv80bO0E4df%2FEqgngXoARNN2e2z7Pxtn6m5B99HkveM7135aN18i%2BajbaHRcw%2BC3Mr4Knv0TWPSrmVxVl%2B4odhnazQk%2FAVf737ElkmMjFn4rAw76qUyTZA9aVADfDXiv2%2FN7rm%2FC%2FdYTrX4oWqEvWr6k83uiFcixvqQL5Zjt0NYd2ME%2BrsfrcRprj%2FD3b6Fo7RA%3D";
+  "?data=eJy9WgtT20gS%2FitTqroq2ShCki0beQM5JyiB2gA5ILmrAjYl22OsO1tyJBmcEP77dc9DGr0gm9sLlQWNpvvr5%2FRMj%2FZBm8Yzqo20fx4fvvMvL8xPZ%2B8%2FnvhknzyQVRiNiGWQVbAdEdsgaUbX8MKEx00UZiNyrV1r5PE6krzjy98VRtOyBS88ugW7ZSkAaRnh0L94o0JIBEdhb%2Bc%2BOT79%2FPbc%2F0eB4Obq71mWxLCtAuHoWwVi%2FK%2F%2FFQLZP598fN9kR6%2FZjm0Z4Wh8fnJ2eqx4QvLbeRhag4BO%2BDQ%2Br0dwT2FdL4MpXcTLGU0YQQsUOOPPQQ3aoC4%2BjN%2F4Lcnhlp1S1s1sD%2Ffp2aV%2FUfeRY7Vp57Zq5%2FuHCpBl5THvWa1otmO1BuH49OLy%2FGPDKrL%2FdBA4lG0xsOzrmiLJdJPc0Uqw%2FMvxe9tWfVxfurgOK%2F4dtgk%2B9P0PP4FX88l1tLt7HkSzeEUWdLmmCZlvomkWxlF6HclHks6nPUcPDDIxyNQgsw55uI4I%2FCQ02yRRzkP0fAZ%2FAnJwcLBPrN%2FIJH%2Ba5k8z%2BVQw3AUJycAoPSA7ZNIh30uzAcxMyB8cjHjKzARmpsCiT8nLl6RXZZwiJJtybJhiKkC0OwrJDEhmgGBXWFGbDN7PGiBRYlZ5LxyiZ0yG1SG7pO94fW8wdLyBoAO3wz%2B0NaUUBbMM%2F4NY20N%2FfPja99%2F%2BxqcTCAxMc%2B9bW8%2FvDYfea88ASqffezsY7%2B3h8%2Buhb7v2AMsw4KFV8zghOiKEhLk6JC%2BJ7cLfnZ0OQ9WRanf3JMgW5KgW9yXNyHQZrNbot61BMPAdsn9AkN6ENMNU4M9hpENObDsdzjVfBhmmH4shS5ctY2Rour4lL0iAPtEn7MnAlWULXhqkFPkyxpGByqZLXhGHdGGA%2F43ICxuD3Ade9raDvzhzuorjbNEkGmF1qVc%2BI2Suwm1Bv2L0AYDqtmmBEHgBaQjjFfPWRbyBeFx8jbIFTcO06rH1JmH6zxP6xSBZ4bAUnIQvhSGoOnv%2F4VhokSVhEN0um7mDSarrBf8OVgW3Q%2F5GQEd0gMNUrQ6EV75sgrpSUlzx8gCrBfgazUYv5%2FzBfZW50ETRgMnkLEH2H2SZSfoiMDrEmr3mhDM6LVyv2Eu3a%2F1FT%2FoIkw34skriCIwkuI%2FijBmIfwuQdXyvO1AS2Wvg8Exktp2OtItVmTuoj0m8jhOMopKndyC9mDDAIUWWRkF4R9%2FEq3VC0xSWGcBMNvM5TRi%2FKH4stQJMLT5nJnS2mVJdr6%2BkPMa4GvLBpIMmstLGAWBF%2B8F0oevUIKGBvsBUvQpvQIY4FXYJBRsBs8PqC1f3dhNmQQJKrmgWLCPQed8yB8aM0jUbYAhlVGUYFCPQPosPlbrO4iwTowsLdtfBhNTtTpkG12Ip%2Fpbp7FjmXjdfjiAeXlpGrh04ISAVmBRg8oW07oq103UUsmRnP82L65PaZq2a5kpZBqr103p0YYF2pYNLSj2h1RMe%2FAv16jfr9YRa%2FV%2BhltOslthLE6AYuC%2BArK8k9n2YLY6CZBVH4RQl6WkExWUh36iJLPfkhhxvyHP8ado%2F8%2F1ONgCKNHNJo9ts0RE7rAIuBaDsz%2Bg1Xj1zTljB5rxOni6CNZY1MIqp%2FZnXzSoZFKtlmG1mSFqChIkydUJ29hXyLpdQ0DwqQRFuVw8r0uPvWDkR7maOLMWBBYHzXeHObmBvCG1V38DjPfQfcJ6FIwucYLBHs%2B0bKIFrnVYCIhR4IPMRQVWhCcGTmYH6s5ZEbg5Y5bGaEaj8woBHrJuKvnF0%2B4u17UERdkr6DntlhXs1haW6H%2BJ75xeqW2yVqFGu755d1rfvtir8mi6Xv1BhmATHdtghqNcrudU2PU%2BxQlW%2FVfsLfgxglQP3%2B%2BKAk59egkyXaxDfCboC4lO83KxojnLHhg04CgZozckwUWWypuykL5TS8SgJHjGx7oZzosuOdX8frS9oMV8YcZ3OUemKkJS5ZHQKbzM3q0vt0ahMutjSqAR8%2FqauQu%2F%2FpQJbYj%2BkQv%2FXeMF5VknnKS1dqaU8mdcoBs12SPrnLXg%2BkE8pOFTFY01tSbo9lQ5rQwudV8Jje4qkrCe8JYmbNnBRHeQ9jHlLM7XXsi2CJytsuqBFEceHqgC7TUBJBD9J6%2BImxyD8BqbDeTJ55t7tdq%2BjLvHvguUmgNYjZT0jaxawPYzncE5iPUmA56xb6CUikoVYC7rk7%2BsgCVbk4WzybzrNHonoXfCPOh1tVhOa8GlzHWbTBRDxv2FEjr6ZrcQpGJBdgjRgYM9MNHKldBpHs7SdlR9wgG%2B2SQJ21fMMV8bFTDdJQqNGQbvKBRMFf52CHNavGYy6o%2FYh7BqGI5Yt4SQYUbwwsMj370B7QNhVNW%2BHu6oBndq%2BIi9v5CkQK7Xi2S6RN8bFCUwekGASul19fPm7KOvQ0vKREK8I5tyPeI3wjkY0wdzA6ZRkC0gFnia3cTwjWQw5vKCJ4p1bwYEeSvWSY9ZxmoaTJT3Z4D6sFABbWe6O8txTn1mJKsZ9GKvzvEKUx%2Br8AMauMh7CeKCM92A8vOHjsqLKyEyXIbTG4mYcemB%2Br92p2%2FieeRIP%2B1f8LNG%2FqRNdrINpyA59DUTc4%2FtknCTBV51dUStyiuWRNwOsEcA5pRFgbPWTPkugVdW6K3YQmS%2FjONH5xRveLSjWi7y8URKTgwjqA7b%2FvOJvR%2ByGZpcNypKXQYprJMQyR%2FBWlbwqNwDM9Cs2fyNye1Sm4L3alyTT8%2B8scL4SX22qDSAD2OdiuxV9cDVyggOSQ8HC5O9eFphlmEazeNnZr%2BbAk24VNA2uZVHOE6SSMk9iCpoGTOHYG3YXzwwyikwypAVKf1WkGbRkUpsuYR9hmvpfJiDvwmQKV2rCdQR1NY2XUG%2FiW%2F1aY0l6rRmcPr%2F2ggZQWQAX45MP7%2F3Pb84%2Bnl52xK2xpOP5zp5eEpWQv1SSX9ZnRrtLzseXvlJT02IxpWiwsEY6gx35I3ZPm28BWCuVfKtfnvGvAwKU23SFfzEG3FOVWzpdUHXyw%2Fa7JFhjXl3dKHbjIsfvS5a8Mrds%2FtxgbYj3iTBrWsX7O7F%2F2AY7fAykikKcud6kC%2F2O7wOyrSlZIWrnLVKnI3IlX%2BcQoO2jZmj34Qw2iVQbPWiHH8Hhx2en%2BLwKI22EH3m0VbDVRtBVaXhDI97hhx9tpKXAr3wVAjJDw9MK1UY9s2eVfnqPhsZvFwt4Cd6E3Q5tmR5gweao6GlJRdmnqhwOP0G3KgvTjtMbWIOhNxz2PW%2B45w0VIZZdscAGqbgbN7jHUUQ%2BKbHfHzp2z%2FVckOe5Q0%2BRNxgCvqxnuQw3dxJ%2BlRZSMBpCxtG3qhD8kilR7b6FoKJw%2FkWggwGCyrNMgzd6jd7Y1r3h9odDx3HdoWu59mDgFHqDAHk3lgvIczHPl%2FZsgfRDwP7Qs3qu28%2BBpY%2FhVFBLw73nYQsnSL%2F%2BJNCg8CYAsXrdnM3uj2aWuj7Qfaxq13znWM%2Fr5uZILurm%2B4cFDH4xF1HoWT%2BAxb6d51F12Bri%2FVK9CvxAWJXMtnIk20Is%2FGIOHOyDuZaTPWhBAnxXuNZdvFyG6oB5h7%2F73g%2F87g%2FcgePegI78f5%2BZbibhVHvE6PPu7alqhqWozRJTrTVDl9UW7AJ%2FGq%2BcAIB3R5MUjvywGDyoM2GKe9gmozNtNA%2BWKWXkIYyyZEMf%2FwtPrUHA";
+const tuto7 =
+  "?data=eJx9kUFLw0AQhf%2FKMCelS0niyVUPpS0S0FZsi4ckSGimbSDZhN1NVdL8dyc1TaGoe9nh7ffeDLM1rouEUOKbP3mcLhdDf7aYr2YTeIAa7FdJEkI0RaWSEKEJ1QXm%2FcWFKiMLJs7LjAxDQRSqTaHh6iyz6tyd6ntYjJ5fnqbvY45dnuTB4BrqUAGfLir4uSM2dyP0yuEAzu%2FsoIe9C5on1WQrraDuTAK2Oi53RkJwUjqv6EOiBgV%2BpMmWrEFZ42T1Olr681lb56lC6QxdgXn8idJ1BBpLZadVKrW8bMP%2BMovXtCuyhDRjAvdxVvFHuI3Ark8b1662NbSbxR4KojPl%2FYsxtydt0oKncm9uj09pgtLqigSmZlzkZWWJlU2cGWq%2BAbM7qYk%3D";
 //ADD MOUSE DRAWING WIDGET FOR REPLACING PURE SIN WITH OTHER PERIODIC FUNCTION
 //ADD SELECT WIDGET
 
@@ -33,7 +36,7 @@ const tuto6 =
  * @param {HTMLCanvasElement} canvas
  * @param {Array} buffer
  */
-function drawBuffer(canvas, buffers) {
+function drawBuffer(canvas, buffers, dstate) {
   let ctx = canvas.getContext("2d");
 
   for (let bufferIndex = 0; bufferIndex < buffers.length; bufferIndex++) {
@@ -43,6 +46,19 @@ function drawBuffer(canvas, buffers) {
 
     ctx.resetTransform();
     ctx.translate(bufferIndex * w, 0.0);
+
+    let scale = 1;
+    if (dstate.trans) {
+      let t = dstate.trans[bufferIndex];
+      if (t && false) {
+        scale = t.scale;
+        ctx.translate(t.x, t.y);
+        ctx.scale(scale, scale);
+        ctx.translate(-t.x, -t.y);
+      }
+    } else {
+      console.log("no dstate");
+    }
 
     ctx.width = w;
     ctx.height = h;
@@ -81,7 +97,7 @@ function drawBuffer(canvas, buffers) {
       return 10 + (i / (buffer.length - 1)) * (w - 20);
     }
     ctx.strokeStyle = "#977";
-    ctx.lineWidth = "1";
+    ctx.lineWidth = 1 / scale;
     ctx.beginPath();
     ctx.moveTo(0, vToH(0));
     ctx.lineTo(w, vToH(0));
@@ -104,7 +120,7 @@ function drawBuffer(canvas, buffers) {
 
     ctx.strokeStyle =
       bufferIndex % 2 === 0 ? "rgb(96, 197, 177)" : "rgb(100, 153, 211)";
-    ctx.lineWidth = "1";
+    ctx.lineWidth = 1 / scale;
     ctx.stroke();
   }
 }
@@ -144,6 +160,49 @@ export const getQueryStringValue = (
   const values = qs.parse(queryString);
   return values[key];
 };
+
+async function b64ToSetting(b64) {
+  if (b64) {
+    let {
+      code,
+      widgets = {},
+      appVersion = 0,
+    } = await worker.compressedB64ToObj(b64);
+    if (appVersion === 0) {
+      // code = { main: code };
+    }
+    return { code, widgets, appVersion, version: 10 };
+  }
+  return null;
+}
+
+function handleMouse(dstate, graphs, w, h, nx, ny, scroll) {
+  let redraw = false;
+  if (!dstate.trans || dstate.trans.length !== graphs.length) {
+    dstate.trans = [];
+    for (let i = 0; i < graphs.length; i++) {
+      dstate.trans.push({ scale: 1, x: w / 2, y: h / 2 });
+    }
+  }
+
+  if (nx != null && ny != null) {
+    dstate.x = nx;
+    dstate.y = ny;
+  }
+
+  if (scroll != null) {
+    redraw = true;
+    let transIndex = Math.floor((graphs.length * dstate.x) / w);
+    let t = dstate.trans[transIndex];
+
+    t.x = dstate.x;
+    t.y = dstate.y;
+
+    t.scale *= 1 + scroll * 0.2;
+    t.scale = Math.max(1, t.scale);
+  }
+  return redraw;
+}
 
 export default function EditorFrag() {
   const monaco = useMonaco();
@@ -222,13 +281,12 @@ export default function EditorFrag() {
     }
   });
 
+  const dstate = useRef({});
+
   const ReDrawBuffer = useCallback(() => {
     let codeResult = astate?.codeResult;
     if (codeResult)
-      drawBuffer(
-        canvasRef.current,
-        codeResult.graphs || [codeResult.samples] || []
-      );
+      drawBuffer(canvasRef.current, codeResult.graphs, dstate.current);
   }, [astate]);
 
   useEffect(() => {
@@ -248,10 +306,8 @@ export default function EditorFrag() {
     async function getInitialData() {
       let data = getQueryStringValue("data");
       if (data) {
-        let { code, widgets = {} } = await worker.compressedB64ToObj(data);
-
-        console.log("getInitialData", widgets);
-        setSetting({ code, widgets, version: 10 });
+        let sets = await b64ToSetting(data);
+        setSetting(sets);
       } else {
         loadPreset(tuto3);
       }
@@ -263,9 +319,8 @@ export default function EditorFrag() {
     async function getData(preset) {
       let data = getQueryStringValue("data", preset);
       if (data) {
-        let { code, widgets = {} } = await worker.compressedB64ToObj(data);
-
-        setSetting({ code, widgets, version: 10 });
+        let sets = await b64ToSetting(data);
+        setSetting(sets);
       }
     }
     getData(preset);
@@ -372,7 +427,12 @@ export default function EditorFrag() {
       }
 
       async function saveSetting() {
-        let str = await worker.objToCompressedB64(cloneDeep(setting));
+        let settingClone = cloneDeep(setting);
+        Object.keys(settingClone.widgets).forEach((k) => {
+          if (settingClone.widgets[k].type === "sound")
+            settingClone.widgets[k].value = [];
+        });
+        let str = await worker.objToCompressedB64(settingClone);
         setQueryStringValue("data", str);
       }
       saveSetting();
@@ -406,7 +466,7 @@ export default function EditorFrag() {
       //   source.connect(astate.audioCtx.destination);
       source.start();
 
-      let graphs = codeResult.graphs || [codeResult.samples] || [];
+      codeResult.graphs = codeResult.graphs || [codeResult.samples] || [];
       // graphs.push(codeResult.loudness);
       waveformState.current = {
         cursor: 0,
@@ -414,7 +474,7 @@ export default function EditorFrag() {
         loudness: codeResult.loudness,
       };
 
-      drawBuffer(canvasRef.current, graphs);
+      drawBuffer(canvasRef.current, codeResult.graphs, dstate.current);
 
       setAstate((old) => {
         return {
@@ -637,6 +697,7 @@ export default function EditorFrag() {
               ["4", tuto4],
               ["5", tuto5],
               ["6", tuto6],
+              ["7", tuto7],
             ].map(([name, tuto]) => (
               <button
                 style={{
@@ -701,9 +762,7 @@ export default function EditorFrag() {
                       onChange={(v) =>
                         setSetting((old) => {
                           let obj = cloneDeep(old.widgets);
-
                           obj[p.name].value = v;
-
                           return {
                             ...old,
                             widgets: obj,
@@ -721,11 +780,9 @@ export default function EditorFrag() {
                       onChange={(newGrid) => {
                         setSetting((old) => {
                           let obj = cloneDeep(old.widgets);
-
                           try {
                             obj[p.name].value = newGrid;
                           } catch {}
-
                           return {
                             ...old,
                             widgets: obj,
@@ -746,7 +803,6 @@ export default function EditorFrag() {
                           try {
                             obj[p.name].value = newGrid;
                           } catch {}
-
                           return {
                             ...old,
                             widgets: obj,
@@ -756,6 +812,26 @@ export default function EditorFrag() {
                         });
                       }}
                     ></Curve>
+                  )}
+                  {p.type === "sound" && (
+                    <InSound
+                      name={p.name}
+                      value={p.value}
+                      onChange={(newGrid) => {
+                        setSetting((old) => {
+                          let obj = cloneDeep(old.widgets);
+                          try {
+                            obj[p.name].value = newGrid;
+                          } catch {}
+                          return {
+                            ...old,
+                            widgets: obj,
+                            isComputed: false,
+                            version: old.version + 1,
+                          };
+                        });
+                      }}
+                    ></InSound>
                   )}
                 </div>
               ))}
@@ -820,8 +896,37 @@ export default function EditorFrag() {
         }}
       >
         <div style={{ borderRadius: "3px", overflow: "hidden" }}>
-          {" "}
           <canvas
+            onMouseMove={(e) => {
+              var rect = e.target.getBoundingClientRect();
+              var x = e.clientX - rect.left; //x position within the element.
+              var y = e.clientY - rect.top; //y position within the element.
+              if (astate?.codeResult) {
+                let redraw = handleMouse(
+                  dstate.current,
+                  astate.codeResult.graphs,
+                  wsize.width - 10,
+                  Math.floor(wsize.height * 0.35),
+                  x,
+                  y
+                );
+              }
+            }}
+            onContextMenu={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+              if (astate?.codeResult) {
+                let redraw = handleMouse(
+                  dstate.current,
+                  astate.codeResult.graphs,
+                  wsize.width - 10,
+                  Math.floor(wsize.height * 0.35),
+                  null,
+                  null,
+                  e.button === 0 ? 1 : -1
+                );
+                if (redraw) ReDrawBuffer();
+              }
+            }}
             ref={canvasRef}
             width={wsize.width - 10}
             height={Math.floor(wsize.height * 0.35)}

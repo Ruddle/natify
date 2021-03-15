@@ -64,9 +64,11 @@ function completeNewWidgets(userCodeWidgets, oldWidgets) {
     let current = userCodeWidgets[widgetKey];
     let old = newWidgets[widgetKey];
 
-    let isSlider = current.min !== undefined;
-    let isGrid = current.width !== undefined;
+    let isSound = current.type === "sound";
     let isCurve = current.type === "curve";
+    let isSlider = !isCurve && current.min !== undefined;
+    let isGrid = !isCurve && current.width !== undefined;
+
     if (isSlider) {
       let {
         min,
@@ -138,6 +140,13 @@ function completeNewWidgets(userCodeWidgets, oldWidgets) {
         newWidgets[widgetKey] = {
           type: "curve",
           value: { arr, mode: "linear" },
+        };
+      }
+    } else if (isSound) {
+      if (!old || old.type !== current.type) {
+        newWidgets[widgetKey] = {
+          type: "sound",
+          value: [],
         };
       }
     }
